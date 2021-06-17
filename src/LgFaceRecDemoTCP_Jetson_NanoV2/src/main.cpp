@@ -69,7 +69,7 @@ int Handle_RecvLoginRequest(int mode, unsigned char* pRcvMsg)
 
     AccessRight accessRight = ACCESS_UNKNOWN;
 
-    printf("Receive Login Request: 0x%x\n", mode);
+    LOGGER->Log("Receive Login Request: 0x%x\n", mode);
 
     idLen = decoder.ParsingBuffer(ptr, &idBuf);
     ptr += sizeof(int) + idLen;
@@ -162,14 +162,14 @@ int onHandleRecvMessage(gssSocketClass *pSocket, int &nSelectedMode, int &nLearn
     CommandEncoder encoder;
     CommandDecoder decoder;
 
-    printf("onHandleRecvMessage\n");
+    //printf("onHandleRecvMessage\n");
 
     nHdrLen = sizeof(S_MSG_CMN_HDR);
-    printf("nHdrLen: %d\n", nHdrLen);
+    //printf("nHdrLen: %d\n", nHdrLen);
 
     if((n = pSocket->receiveData(recvBuf, nHdrLen)) < 0)
     {
-        printf("Failure to read message header\n");
+        LOGGER->Log("Failure to read message header");
         return -1;
     }
 
@@ -177,10 +177,10 @@ int onHandleRecvMessage(gssSocketClass *pSocket, int &nSelectedMode, int &nLearn
     decoder.DecodeCommonHeader(pstMsgCmnHdr);
 
     // Receive the message body
-    printf("dataLen: %d\n", pstMsgCmnHdr->dataLen);
+    //printf("dataLen: %d\n", pstMsgCmnHdr->dataLen);
     if((n = pSocket->receiveData(recvBuf + nHdrLen, pstMsgCmnHdr->dataLen)) < 0)
     {
-        printf("Failure to read message body\n");
+        LOGGER->Log("Failure to read message body");
         return -1;
     }
 
@@ -233,12 +233,17 @@ void draw_facebox(cv::Mat &image, std::vector<Bbox> outBox)
     if (outBox.size() > 0) {
         cv::rectangle(image, cv::Point(outBox[0].y1, outBox[0].x1), cv::Point(outBox[0].y2, outBox[0].x2), cv::Scalar(0,0,255), 2,8,0);
     }
-    /*
-    for(vector<struct Bbox>::iterator it=outBox.begin(); it!=outBox.end();it++) {
-        cv::rectangle(image, cv::Point((*it).y1, (*it).x1), cv::Point((*it).y2, (*it).x2), cv::Scalar(0,0,255), 2,8,0);
-    }
-    */
 }
+
+
+/* To prevent stack overflow, the following variables are changed as global type */
+gssSocketClass     gssSocket;
+sslManagerClass    sslManager;
+CommandEncoder     encoder;
+const std::string  uffFile = "../facenetModels/facenet.uff";
+const std::string  engineFile = "../facenetModels/facenet.engine";
+VideoStreamer      *videoCameraStreamer = NULL;
+VideoStreamer      *videoFileStreamer   = NULL;
 
 
 int main(int argc, char *argv[])
@@ -246,11 +251,33 @@ int main(int argc, char *argv[])
     int                portNum = 0;
     bool               bSecureMode = false;
     const char        *p_sVideoFileName = TEST_VIDEO_FILENAME;
-    gssSocketClass     gssSocket;
-    sslManagerClass    sslManager;
-    CommandEncoder     encoder;
 
-    int recvBufLen, sendMessageLen;
+    bool serializeEngine = true;
+    int batchSize = 1;
+    int nbFrames = 0;
+    int videoFrameWidth  = 640;
+    int videoFrameHeight = 480;
+    int maxFacesPerScene = 8;
+    float knownPersonThreshold = 1.;
+    bool isCSICam = true;
+    //bool isCSICam = false;
+
+    // USER DEFINED VALUES
+    DataType dtype = DataType::kHALF;
+    //DataType dtype = DataType::kFLOAT;
+
+    cv::Mat frame;
+    cv::Mat frame_captured;         // For learning, save the current face image
+    cv::Mat frame_captured_boxed;   // In learning mode, face-boxed image with frame_captured
+
+    /* Initialization of CUDA */
+    cv::cuda::GpuMat src_gpu, dst_gpu;
+    cv::Mat dst_img;
+
+    // get embeddings of known faces
+    std::vector<struct Paths> paths;
+    cv::Mat image;
+
 
     if(!canFileOpen(p_sVideoFileName)) {
         LOGGER->Log("test-video file cannot be open");
@@ -270,36 +297,14 @@ int main(int argc, char *argv[])
     if(!authenticateSystem())
         exit(0);
 
-    Logger gLogger = Logger();
 
     // Register default TRT plugins (e.g. LRelu_TRT)
+    Logger gLogger = Logger();
     if (!initLibNvInferPlugins(&gLogger, "")) { return 1; }
-
-    // USER DEFINED VALUES
-    const string uffFile = "../facenetModels/facenet.uff";
-    const string engineFile = "../facenetModels/facenet.engine";
-    DataType dtype = DataType::kHALF;
-    //DataType dtype = DataType::kFLOAT;
-    bool serializeEngine = true;
-    int batchSize = 1;
-    int nbFrames = 0;
-    int videoFrameWidth  = 640;
-    int videoFrameHeight = 480;
-
-    int maxFacesPerScene = 8;
-    float knownPersonThreshold = 1.;
-    bool isCSICam = true;
 
     // init facenet
     FaceNetClassifier faceNet = FaceNetClassifier(gLogger, dtype, uffFile, engineFile, batchSize, serializeEngine,
-            knownPersonThreshold, maxFacesPerScene, videoFrameWidth, videoFrameHeight);
-
-    VideoStreamer *videoCameraStreamer = NULL;
-    VideoStreamer *videoFileStreamer   = NULL;
-
-    cv::Mat frame;
-    cv::Mat frame_captured;         // For learning, save the current face image
-    cv::Mat frame_captured_boxed;   // In learning mode, face-boxed image with frame_captured
+                                         knownPersonThreshold, maxFacesPerScene, videoFrameWidth, videoFrameHeight);
 
     // init mtCNN
     mtcnn mtCNN(videoFrameHeight, videoFrameWidth);
@@ -307,23 +312,6 @@ int main(int argc, char *argv[])
     //init Bbox and allocate memory for "maxFacesPerScene" faces per scene
     std::vector<struct Bbox> outputBbox;
     outputBbox.reserve(maxFacesPerScene);
-
-    // get embeddings of known faces
-    std::vector<struct Paths> paths;
-    cv::Mat image;
-
-/*  Only use to encrypt existed image files.
-    getFilePaths("../imgs", paths);
-    std::cout << "path size : " << paths.size() << std::endl;
-    std::string dirPath = "../imgs/";
-    for(int i = 0; i < paths.size(); i++)
-    {
-        encrypt_file(dirPath.c_str(), dirPath.length(),
-                    paths[i].fileName.c_str(), paths[i].fileName.length());
-    }
-
-    paths.clear();
-*/
 
     getEncryptedFilePaths("../imgs", paths);
 
@@ -335,27 +323,31 @@ int main(int argc, char *argv[])
             cout << "loadInputImage failed " << endl;
             exit(-1);
         }
-
         outputBbox = mtCNN.findFace(image);
         faceNet.forwardAddFace(image, outputBbox, name);
         faceNet.resetVariables();
     }
-
     outputBbox.clear();
-
-    //printf("---------------------\n");
 
     /* If the camera is CSICam, it must be always open */
     if(isCSICam) {
-        //videoCameraStreamer = openCameraStream(videoFrameWidth, videoFrameHeight, true);
-	videoCameraStreamer = new VideoStreamer(0, videoFrameWidth, videoFrameHeight, 60, isCSICam);
-        if(videoCameraStreamer == NULL) {
+        if((videoCameraStreamer = new VideoStreamer(0, videoFrameWidth, videoFrameHeight, 60, isCSICam)) == NULL) {
             LOGGER->Log("CSI Camera cannot be open\n");
-            //exit(-1);    // This comment must be removed for the official release
+            exit(-1);
         }
-	else {
+        else {
             LOGGER->Log("CSI Camera open\n");
-	}
+
+            cv::Mat temp_frame;
+            videoCameraStreamer->getFrame(temp_frame);
+            if(temp_frame.empty()) {
+                LOGGER->Log("CSI Camera buffer is blocked");
+                fprintf(stderr, "Try to reset the camera! Run the follwing!!\n");
+                fprintf(stderr, "    sudo systemctl restart nvargus-daemon\n");
+                exit(0);
+            }
+            temp_frame.release();
+        }
     }
 
     /* OpenSSL Initialization */
@@ -374,10 +366,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
     LOGGER->Log("Listening started");
-
-    /* Initialization of CUDA */
-    cv::cuda::GpuMat src_gpu, dst_gpu;
-    cv::Mat dst_img;
 
 
     bool bTerminateLoop1 = false;
@@ -402,7 +390,7 @@ int main(int argc, char *argv[])
                     LOGGER->Log("Network Connection Failure. Disconnected!!");
                 }
                 else if (k > 0) {
-                    printf("Before Message Receive\n");
+                    //printf("Before Message Receive\n");
                     int nTempSelectedMode = nSelectedMode;
                     int nTempLearningMode = nLearningMode;
                     if(!onHandleRecvMessage(&gssSocket, nTempSelectedMode, nTempLearningMode, sName4Learn)) {
@@ -451,7 +439,7 @@ int main(int argc, char *argv[])
                             nLearningMode = nTempLearningMode;
                         }
                     }
-                    printf("After Message Receive\n");
+                    //printf("After Message Receive\n");
                 }
                 else {
                     // If you want to do something without recv message,
