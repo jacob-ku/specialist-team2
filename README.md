@@ -10,7 +10,7 @@
 
       2) Team2_HowToBuildClient.pptx : Client Build guide
       3) Team2_TestCases.xlsx : Test cases
-      4) Team2_static_analysis_FlawFinder.xlsx :  code review & known defects 
+      4) Team2_static_analysis_FlawFinder.xlsx : Review related in secure coding
 
     /**src**
     1) LgFaceRecDemoTCP_Jetson_NanoV2 : source files GSS ( server side)
@@ -35,7 +35,7 @@
     >
     > 8) >sudo ldconfig 
 
-    2) Security : source files of GCS ( client side) based on Visual Studio
+    2) Security : source files of GCS ( client side) based on Visual Studio. Refer to build guide document for the client (Team2_HowToBuildClient.pptx)
 
     
 
