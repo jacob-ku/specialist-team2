@@ -41,21 +41,21 @@
 
 2. Known Defects
 
-    1)  When the server is running as non-secure mode and the client tries to connect to server as secure mode, it causes hang on both sides.
+    1)  When the server is running as non-secure mode and the client tries to connect to server as secure mode, it causes hang on both sides. Need to run each application with the same mode. ( server (secure mode) : client (secure mode), server(non-secure mode): : client (non-secure mode) )
 
-    2) If you want to change the communication mode ( secure/non-secure mode) of each application,  they need to be terminated and restarted.
-
+    2) If you want to change the communication mode ( secure/non-secure mode) of each application,  they need to be terminated and restarted with designated mode.
+    
     3) Creating new User ID, removing user ID and resetting password are not implemented.     
-
     
-
-3. User ID/PW : 
-
-    1) General user : kinduser / lgssteam2
-    2) Administrator : admin / wewant2go2cmu
-
+    4) After the server is terminated by Ctrl+C, CSI Camara is not opened on next Run mode due to buffer for CSI camera is blocked on Jetson Nano. In that case, execute below command on Jetson Nano's shell and run the server.
+     > sudo systemctl restart nvargus-daemon
+     
+3. Credentials :
+    1) User ID/PW (client)
+      - General user : kinduser / lgssteam2
+      - Administrator : admin / wewant2go2cmu
+    2) Server passPhrase : weareteam2
     
-
 4. Contact info
     E-mail : lg-security-specialist-team2@googlegroups.com
 
