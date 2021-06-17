@@ -12,8 +12,9 @@ class VideoStreamer {
 private:
     int m_videoWidth;
     int m_videoHeight;
-	int m_frameRate;
+    int m_frameRate;
     cv::VideoCapture *m_capture;
+    bool m_bOpenVideo;
 
 public:
     VideoStreamer(int nmbrDevice, int videoWidth, int videoHeight, int frameRate, bool isCSICam);
