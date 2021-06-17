@@ -6,14 +6,17 @@ VideoStreamer::VideoStreamer(int nmbrDevice, int videoWidth, int videoHeight, in
     	m_videoHeight = videoHeight;
 	m_frameRate = frameRate;
 
-    std::string pipeline = gstreamer_pipeline(videoWidth, videoHeight, videoWidth, 
-			                        videoHeight, frameRate);
+        std::string pipeline = gstreamer_pipeline(videoWidth, videoHeight, videoWidth, 
+					                        videoHeight, frameRate);
 	std::cout << "Using pipeline: \n\t" << pipeline << "\n";
 	 
 	m_capture = new cv::VideoCapture(pipeline, cv::CAP_GSTREAMER);
 	if(!m_capture->isOpened()) {
-		std::cerr << "Failed to open CSI camera."<< std::endl;
+	    std::cerr << "Failed to open CSI camera."<< std::endl;
 	}
+        else {
+            m_bOpenVideo = true;
+        }
     }
     else {
     	m_capture = new cv::VideoCapture(nmbrDevice);
@@ -21,10 +24,13 @@ VideoStreamer::VideoStreamer(int nmbrDevice, int videoWidth, int videoHeight, in
         	//error in opening the video input
         	std::cerr << "Failed to open USB camera." << std::endl;
     	}
-    	m_videoWidth = videoWidth;
-    	m_videoHeight = videoHeight;
-    	m_capture->set(cv::CAP_PROP_FRAME_WIDTH, m_videoWidth);
-    	m_capture->set(cv::CAP_PROP_FRAME_HEIGHT, m_videoHeight);
+        else {
+            m_videoWidth = videoWidth;
+            m_videoHeight = videoHeight;
+    	    m_capture->set(cv::CAP_PROP_FRAME_WIDTH, m_videoWidth);
+    	    m_capture->set(cv::CAP_PROP_FRAME_HEIGHT, m_videoHeight);
+            m_bOpenVideo = true;
+        }
     }
 }
 
@@ -33,6 +39,9 @@ VideoStreamer::VideoStreamer(std::string filename, int videoWith, int videoHeigh
     if (!m_capture->isOpened()){
         //error in opening the video input
         std::cerr << "Unable to open file!" << std::endl;
+    }
+    else {
+        m_bOpenVideo = true;
     }
     // ToDo set filename width+height doesn't work with m_capture.set(...)
 }
@@ -67,10 +76,15 @@ std::string VideoStreamer::gstreamer_pipeline (int capture_width, int capture_he
 }
 
 void VideoStreamer::release() {
-	m_capture->release();
+    m_capture->release();
+    m_bOpenVideo = false;
 }
 
 VideoStreamer::~VideoStreamer() {
+    if(m_bOpenVideo == true && m_capture != nullptr) {
+        m_capture->release();
+        m_bOpenVideo = false;
+    }
     if (m_capture != nullptr) {
         delete m_capture;
         m_capture = nullptr;
