@@ -5,12 +5,36 @@
 
     /**docs**
       1) Team2_Project_Phase1_Presentation.pptx : presentation material for Phase 1 including user guide
-      2) HowToBuildClient.pptx : Client Build guide
+
+      2) Team2_Project_2021-06-17.pptx : Studio project documentation
+
+      2) Team2_HowToBuildClient.pptx : Client Build guide
       3) Team2_TestCases.xlsx : Test cases
       4) Team2_static_analysis_FlawFinder.xlsx :  code review & known defects 
 
     /**src**
     1) LgFaceRecDemoTCP_Jetson_NanoV2 : source files GSS ( server side)
+
+    > **prerequisite** : openssl-1.1.1k is required to install on Jetson Nano.
+    >
+    > 1) go to https://github.com/openssl/openssl and get openssl 1.1.1k
+    >
+    > 2) unzip the package
+    >
+    > 3) > ./config
+    >
+    > 4) > make
+    >
+    > 5) > make install 
+    >
+    > 6) Add  below to ~/.bashrc
+    >
+    >  *export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH* 
+    >
+    > 7) >  source ~/.bashrc 
+    >
+    > 8) >sudo ldconfig 
+
     2) Security : source files of GCS ( client side) based on Visual Studio
 
     
