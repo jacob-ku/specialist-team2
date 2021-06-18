@@ -179,7 +179,7 @@ SSL_CTX* InitCTX(void)
 	SSL_load_error_strings();            /* Bring in and register error messages */
 	//method = SSLv23_client_method();			/* Create new client-method instance */
 	//ctx = SSL_CTX_new(method);				/* Create new context */
-	ctx = SSL_CTX_new(SSLv23_client_method());	/* Create new context */
+	ctx = SSL_CTX_new(TLSv1_2_client_method());	/* Create new context */ //TLSv1_2_client_method
 	if (ctx == NULL)
 	{
 		ErrorHandling("ctx Error");
