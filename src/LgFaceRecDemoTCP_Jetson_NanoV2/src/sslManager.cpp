@@ -39,8 +39,8 @@ sslManagerClass::~sslManagerClass()
 int sslManagerClass::setRole(int bServer)
 {
     m_pSSLCtx = (bServer)
-        ? m_pSSLCtx = SSL_CTX_new(TLS_server_method())
-        : m_pSSLCtx = SSL_CTX_new(TLS_client_method());
+        ? m_pSSLCtx = SSL_CTX_new(TLSv1_2_server_method())
+        : m_pSSLCtx = SSL_CTX_new(TLSv1_2_client_method());
 
     if (!m_pSSLCtx) {
         ERR_print_errors_fp(stderr);
