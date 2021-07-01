@@ -19,14 +19,7 @@
 >
 </br>
 
-## 3. etc
 
-/**etc**
->
-> Here is our private space to share somethings.
-> 
-</br>
-
-## 4. Contact info
+## 3. Contact info
 E-mail : lg-security-specialist-team2@googlegroups.com
 </br>
