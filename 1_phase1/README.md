@@ -6,11 +6,13 @@
     /**docs**
       1) Team2_Project_Phase1_Presentation.pptx : presentation material for Phase 1 including user guide
 
-      2) Team2_Project_2021-06-17.pptx : Studio project documentation
+      2) Team2_Project_phase1_report.pptx : Studio project documentation
 
       2) Team2_HowToBuildClient.pptx : Client Build guide
       3) Team2_TestCases.xlsx : Test cases
-      4) Team2_static_analysis_FlawFinder.xlsx : Review related in secure coding
+      4) Team2_SecureCoding_static_analysis_FlawFinder.xlsx : Review related in secure coding
+      6) Team2_SecureDesign.pptx : Architecture design
+      7) Team2_ThreatModeling_SecurityRequirements.xlsx : Theat modeling
 
     /**src**
     1) LgFaceRecDemoTCP_Jetson_NanoV2 : source files GSS (server side)
